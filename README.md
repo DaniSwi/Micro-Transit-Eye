@@ -1,2 +1,4 @@
-# Micro-Transit-Eye
-Proyecto 7 ICD4262 2026
+# Proyecto G7: Micro-Transit-Eye
+## Lucas Contreras - Daniel Cornejo - Constanza Suárez
+
+hola
