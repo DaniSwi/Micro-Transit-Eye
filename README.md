@@ -38,6 +38,7 @@ g7-micro-transit-eye/
 │   ├── resnet50.yaml          ← config del baseline CNN
 │   └── vit_b16.yaml           ← config del baseline Transformer
 ├── src/
+│   ├── download_selective.py  ← baja SOLO las imágenes que pasan el filtro
 │   ├── labels.py              ← conteo de personas → etiqueta (baja/media/alta)
 │   ├── splits.py              ← split 70/15/15 estratificado, semilla fija
 │   ├── dataset.py             ← Dataset + transforms (IDÉNTICOS para ambos modelos)
@@ -45,6 +46,7 @@ g7-micro-transit-eye/
 │   ├── evaluate.py            ← métricas, matriz de confusión, desglose por fuente
 │   └── baselines.py           ← baseline trivial (clase mayoritaria)
 ├── docs/
+│   ├── COLAB.md               ← celdas para copiar y pegar en Colab
 │   ├── CHECKLIST.md           ← lo que hay que tener listo, marcado uno por uno
 │   ├── GUION_PRESENTACION.md  ← las 11 láminas con tiempos
 │   └── RIESGOS.md             ← riesgos concretos + mitigación (criterio de la rúbrica)
@@ -65,7 +67,7 @@ source .venv/bin/activate        # Windows: .venv\Scripts\activate
 pip install -r requirements.txt
 ```
 
-Si alguien no tiene GPU: usar Google Colab (runtime T4 gratis alcanza de sobra)
+Si trabajan en Google Colab: ver `docs/COLAB.md`, tiene las celdas listas para copiar.
 o cambiar el modelo a `vit_small_patch16_224` y `resnet18`.
 
 ---
@@ -73,7 +75,10 @@ o cambiar el modelo a `vit_small_patch16_224` y `resnet18`.
 ## 4. Flujo de trabajo (en este orden)
 
 ```bash
-# 1. Descargar datasets a data/raw/ (ver tabla de fuentes más abajo)
+# 1. Armar el dataset. NO bajen COCO completo (18 GB): este script lee las
+#    anotaciones, filtra, y descarga solo lo que sirve, ya reescalado.
+#    Una persona lo corre una vez y comparte el resultado por Drive.
+python src/download_selective.py coco --out data/raw/coco --cap-per-class 1500
 
 # 2. Construir el índice unificado con las etiquetas derivadas del conteo
 python src/labels.py --raw-dir data/raw --out data/index.csv
