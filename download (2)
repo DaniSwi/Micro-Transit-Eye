@@ -1,0 +1,10 @@
+data/raw/
+data/index.csv
+data/local_valpo/*.jpg
+data/local_valpo/*.png
+outputs/
+.venv/
+__pycache__/
+*.pt
+*.pyc
+.DS_Store

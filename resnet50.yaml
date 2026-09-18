@@ -1,0 +1,32 @@
+# Baseline CNN. Todo lo que esté también en vit_b16.yaml DEBE tener el mismo valor,
+# salvo el bloque "optim" y "model". Esa es la condicion para que la comparacion valga.
+
+run_name: resnet50
+model:
+  name: resnet50                # nombre timm
+  pretrained: true
+
+data:
+  index: data/index.csv
+  image_size: 224
+  num_classes: 3
+  class_names: [baja, media, alta]
+
+optim:
+  epochs: 12
+  batch_size: 32
+  lr_backbone: 3.0e-4
+  lr_head: 3.0e-4
+  weight_decay: 1.0e-4
+  warmup_epochs: 0
+  scheduler: cosine
+  label_smoothing: 0.1
+  class_weights: true           # clases desbalanceadas -> pesos inversos a frecuencia
+
+train:
+  seed: 42
+  num_workers: 4
+  amp: true                     # mixed precision
+  early_stopping_metric: macro_f1
+  early_stopping_patience: 4
+  out_dir: outputs/resnet50

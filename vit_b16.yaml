@@ -1,0 +1,35 @@
+# Baseline Transformer. Mismo split, mismo tamaño de imagen, mismas augmentaciones,
+# mismas epocas y misma perdida que resnet50.yaml. Solo cambia "model" y "optim".
+#
+# Si la GPU no da: cambiar name a vit_small_patch16_224.augreg_in21k_ft_in1k
+# y batch_size a 16. Anotarlo en la presentacion, no esconderlo.
+
+run_name: vit_b16
+model:
+  name: vit_base_patch16_224.augreg_in21k_ft_in1k
+  pretrained: true
+
+data:
+  index: data/index.csv
+  image_size: 224
+  num_classes: 3
+  class_names: [baja, media, alta]
+
+optim:
+  epochs: 12                    # IGUAL que resnet
+  batch_size: 32                # IGUAL que resnet
+  lr_backbone: 2.0e-5           # los ViT preentrenados se rompen con lr alto
+  lr_head: 1.0e-4
+  weight_decay: 0.05
+  warmup_epochs: 2
+  scheduler: cosine
+  label_smoothing: 0.1          # IGUAL que resnet
+  class_weights: true           # IGUAL que resnet
+
+train:
+  seed: 42                      # IGUAL que resnet
+  num_workers: 4
+  amp: true
+  early_stopping_metric: macro_f1
+  early_stopping_patience: 4
+  out_dir: outputs/vit_b16
