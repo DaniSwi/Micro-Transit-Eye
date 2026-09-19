@@ -262,20 +262,33 @@ def cmd_shanghaitech(args) -> None:
 def write_manifest(items: list[dict], path: Path, source: str, img_dir: Path) -> None:
     import csv
     path.parent.mkdir(parents=True, exist_ok=True)
+
+    # Acumula con lo que ya hubiera en el manifiesto: crowdhuman-extract se
+    # corre una vez por ZIP (train01, train02, ...), y sin esto cada corrida
+    # pisaba el manifiesto de la anterior aunque esas imagenes seguian en disco.
+    existing: dict[str, dict] = {}
+    if path.exists():
+        with open(path, newline="") as f:
+            existing = {row["path"]: row for row in csv.DictReader(f)}
+
+    for it in items:
+        row_path = str(img_dir / it["file_name"])
+        existing[row_path] = {
+            "path": row_path,
+            "source": source,
+            "scene_id": f"{source}_{Path(it['file_name']).stem}",
+            "person_count": it["person_count"],
+            "label": it["label"],
+        }
+
     with open(path, "w", newline="") as f:
-        w = csv.writer(f)
-        w.writerow(["path", "source", "scene_id", "person_count", "label"])
-        for it in items:
-            w.writerow([
-                str(img_dir / it["file_name"]),
-                source,
-                f"{source}_{Path(it['file_name']).stem}",
-                it["person_count"],
-                it["label"],
-            ])
+        w = csv.DictWriter(f, fieldnames=["path", "source", "scene_id", "person_count", "label"])
+        w.writeheader()
+        w.writerows(existing.values())
 
     total_mb = sum(p.stat().st_size for p in img_dir.glob("*")) / 1e6
-    print(f"\n{len(items)} imagenes, {total_mb:.0f} MB en disco")
+    print(f"\n{len(existing)} imagenes en el manifiesto ({len(items)} de esta corrida), "
+          f"{total_mb:.0f} MB en disco")
     print(f"manifiesto: {path}")
     print("\nlabels.py puede leer este manifiesto directamente en vez de "
           "re-parsear las anotaciones.")

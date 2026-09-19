@@ -51,14 +51,24 @@ def count_to_label(n: int) -> str:
 # ---------------------------------------------------------------------------
 
 def load_coco(raw_dir: Path) -> list[dict]:
-    """COCO: instances_train2017.json / instances_val2017.json.
+    """COCO: usa el manifest.csv que deja download_selective.py, que ya trae
+    las rutas correctas de las imagenes efectivamente descargadas (el muestreo
+    balanceado baja solo una fraccion de las que pasan el filtro).
 
-    Filtro: la imagen debe tener >=1 caja `person` Y >=1 caja de CONTEXT_CATEGORIES.
+    Si no existe el manifest (por ejemplo, alguien armo data/raw/coco a mano
+    con el COCO completo), cae a re-parsear instances_train2017.json.
     """
+    manifest = raw_dir / "coco" / "manifest.csv"
+    if manifest.exists():
+        df = pd.read_csv(manifest)
+        rows = df[["path", "source", "scene_id", "person_count"]].to_dict("records")
+        print(f"[coco] {len(rows)} imagenes (desde manifest.csv)")
+        return rows
+
     rows: list[dict] = []
     ann_file = raw_dir / "coco" / "annotations" / "instances_train2017.json"
     if not ann_file.exists():
-        print(f"[coco] no encontrado: {ann_file} — se omite")
+        print(f"[coco] no encontrado: {ann_file} ni {manifest} — se omite")
         return rows
 
     data = json.loads(ann_file.read_text())
@@ -91,15 +101,24 @@ def load_coco(raw_dir: Path) -> list[dict]:
 
 
 def load_crowdhuman(raw_dir: Path) -> list[dict]:
-    """CrowdHuman: annotation_train.odgt (un JSON por linea).
+    """CrowdHuman: usa el manifest.csv que deja `crowdhuman-extract`, que ya
+    trae solo las imagenes efectivamente extraidas (el muestreo balanceado
+    saca una fraccion del .odgt completo). Aporta casi toda la clase `alta`.
 
-    Contamos cajas visible-body (`vbox`), ignorando las marcadas como ignore.
-    Aporta casi toda la clase `alta`.
+    Si no existe el manifest, cae a re-parsear el .odgt completo — pero eso
+    genera filas para imagenes que puede que nunca se hayan extraido.
     """
+    manifest = raw_dir / "crowdhuman" / "manifest.csv"
+    if manifest.exists():
+        df = pd.read_csv(manifest)
+        rows = df[["path", "source", "scene_id", "person_count"]].to_dict("records")
+        print(f"[crowdhuman] {len(rows)} imagenes (desde manifest.csv)")
+        return rows
+
     rows: list[dict] = []
     ann_file = raw_dir / "crowdhuman" / "annotation_train.odgt"
     if not ann_file.exists():
-        print(f"[crowdhuman] no encontrado: {ann_file} — se omite")
+        print(f"[crowdhuman] no encontrado: {ann_file} ni {manifest} — se omite")
         return rows
 
     for line in ann_file.read_text().splitlines():
