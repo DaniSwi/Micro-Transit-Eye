@@ -1,7 +1,7 @@
 # G7 — Micro-Transit Eye
 
-**Aprendizaje Automático II · PUCV · Proyecto Aplicado**
-Entregable inmediato: **Presentación de Avance (5%)**
+**Aprendizaje Automático II**
+Lucas Contreras - Daniel Cornejo - Constanza Suárez
 
 ---
 
@@ -21,11 +21,6 @@ Entregable inmediato: **Presentación de Avance (5%)**
 cambiando **solo el backbone**, con el mismo split, la misma pérdida y las mismas métricas.
 Detección exigiría dos arquitecturas de cabeza distintas y no sería una comparación limpia.
 Detección y conteo fino quedan como extensión para el informe final, no para el avance.
-
-> Regla de oro del avance: **es mejor un resultado modesto pero real, comparable y explicado,
-> que un número alto sin procedencia.** Cuatro de los ocho criterios de la rúbrica se ganan
-> solo con tener los dos baselines entrenados y sus métricas en pantalla.
-
 ---
 
 ## 2. Estructura del repo
@@ -152,34 +147,6 @@ Lo único que cambia:
 recall por clase, matriz de confusión, curvas de entrenamiento, nº de parámetros y
 tiempo de inferencia por imagen.
 
-> **Ojo con la expectativa:** es muy probable que ViT rinda **igual o peor** que ResNet con
-> pocos datos. Eso no es un fracaso, es *el hallazgo*. Sostenerlo con argumentos
-> (sesgo inductivo de las convoluciones, hambre de datos del Transformer, sensibilidad
-> al learning rate) da mejor nota que un número alto sin explicación.
-
 ---
 
-## 7. División de tareas
 
-Ajusten los nombres. Lo importante es que **nadie quede como único responsable de un baseline**:
-si ese integrante falla, se pierden dos criterios completos de la rúbrica.
-
-| Rol | Responsable | Entrega |
-|---|---|---|
-| Datos: descarga, `labels.py`, `splits.py` | | `data/index.csv` + tabla de conteos |
-| Baseline ResNet | | `outputs/resnet50/` + curvas |
-| Baseline ViT | | `outputs/vit_b16/` + curvas |
-| Fotos locales Valparaíso + etiquetado | | `data/local_valpo/` + CSV |
-| Evaluación, figuras, matrices de confusión | | `outputs/figures/` |
-| Presentación y ensayo cronometrado | | slides + 3 láminas de respaldo |
-
-Revisión cruzada obligatoria: quien entrena ResNet revisa el código de ViT y viceversa,
-para asegurar que la receta es realmente la misma.
-
----
-
-## 8. Antes de presentar
-
-Ver `docs/CHECKLIST.md` y `docs/GUION_PRESENTACION.md`.
-Ensayar cronometrado **al menos dos veces**: el criterio "Tiempo" (15 min) se pierde por
-pasarse, no por quedarse corto.
