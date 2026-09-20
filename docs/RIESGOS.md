@@ -1,7 +1,5 @@
 # Riesgos identificados
-
-La rúbrica pide "riesgos concretos (no genéricos)". Decir "puede haber overfitting"
-no cuenta. Cada riesgo de abajo tiene qué lo causa, cómo lo detectamos y qué hacemos.
+Cada riesgo tiene qué lo causa, cómo lo detectamos y qué hacemos.
 
 ---
 
