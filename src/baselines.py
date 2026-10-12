@@ -5,6 +5,19 @@ Cuesta 10 minutos y sirve de piso: si ResNet saca 0.62 de macro-F1 y la clase
 mayoritaria ya saca 0.55 de accuracy, hay que decirlo. Presentar un modelo sin
 piso de comparacion es el error clasico que la rubrica castiga.
 
+Se reportan DOS baselines de "clase mayoritaria", porque dan numeros distintos
+y las dos lecturas importan:
+
+  - mayoritaria_train: predice siempre la clase mayoritaria del TRAIN ('media'
+    aqui, porque el muestreo balanceado deja train casi parejo). Simula un
+    baseline real desplegado, que no conoce la distribucion de lo que va a ver.
+  - mayoritaria_del_split: predice siempre la clase mayoritaria DEL SPLIT que
+    se esta evaluando (en 'local', 'baja', porque el set de Valparaiso quedo
+    muy desbalanceado: 63/16/2). Da un accuracy alto (es la mejor respuesta
+    posible sin mirar la imagen) pero un macro-F1 bajo — la prueba concreta de
+    por que macro-F1 es la metrica principal y accuracy "engaña" en datos
+    desbalanceados.
+
 Uso:
     python src/baselines.py --index data/index.csv
 """
@@ -48,10 +61,17 @@ def main() -> None:
         p_maj = [CLASS_NAMES.index(majority)] * len(sub)
         p_rnd = rng.choice(len(CLASS_NAMES), size=len(sub), p=priors)
 
+        majority_split = sub["label"].value_counts().idxmax()
+        p_maj_split = [CLASS_NAMES.index(majority_split)] * len(sub)
+
         rows.append({
             "split": split, "n": len(sub),
-            "mayoritaria_acc": np.mean(np.array(y) == np.array(p_maj)),
-            "mayoritaria_macroF1": f1_score(y, p_maj, average="macro", zero_division=0),
+            "mayoritaria_train_clase": majority,
+            "mayoritaria_train_acc": np.mean(np.array(y) == np.array(p_maj)),
+            "mayoritaria_train_macroF1": f1_score(y, p_maj, average="macro", zero_division=0),
+            "mayoritaria_del_split_clase": majority_split,
+            "mayoritaria_del_split_acc": np.mean(np.array(y) == np.array(p_maj_split)),
+            "mayoritaria_del_split_macroF1": f1_score(y, p_maj_split, average="macro", zero_division=0),
             "aleatorio_priors_acc": np.mean(np.array(y) == p_rnd),
             "aleatorio_priors_macroF1": f1_score(y, p_rnd, average="macro", zero_division=0),
         })

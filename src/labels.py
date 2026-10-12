@@ -78,15 +78,19 @@ def load_coco(raw_dir: Path) -> list[dict]:
     per_image: dict[int, dict] = {}
     for ann in data["annotations"]:
         name = cat_name[ann["category_id"]]
-        d = per_image.setdefault(ann["image_id"], {"persons": 0, "context": set()})
+        d = per_image.setdefault(ann["image_id"], {"persons": 0, "context": set(), "crowd": False})
         if name == "person":
-            d["persons"] += 1
+            if ann.get("iscrowd", 0):
+                # Multitud anotada como una sola caja -> conteo no confiable, se descarta la imagen.
+                d["crowd"] = True
+            else:
+                d["persons"] += 1
         elif name in CONTEXT_CATEGORIES:
             d["context"].add(name)
 
     for img_id, d in per_image.items():
-        if not d["context"]:
-            continue  # sin contexto vial -> fuera
+        if d["crowd"] or not d["context"]:
+            continue  # conteo no confiable o sin contexto vial -> fuera
         fname = img_meta[img_id]["file_name"]
         rows.append(
             {

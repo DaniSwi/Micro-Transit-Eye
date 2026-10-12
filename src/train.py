@@ -34,6 +34,40 @@ from tqdm import tqdm
 from dataset import CLASS_NAMES, ParaderoDataset, build_loader
 
 
+class FocalLoss(nn.Module):
+    """Focal Loss (Lin et al. 2017): escala la cross-entropy por (1 - p_t)^gamma,
+    para que los ejemplos faciles (el modelo ya los clasifica bien) pesen menos
+    en el gradiente y el entrenamiento se concentre en los dificiles — que en
+    este dataset suelen ser justo las clases minoritarias (`alta`). Alternativa
+    a `class_weights`, no un complemento: activarla con `optim.loss: focal` en
+    el YAML — en AMBOS configs si se usa, por el invariante 1."""
+
+    def __init__(self, weight: torch.Tensor | None = None, gamma: float = 2.0,
+                 label_smoothing: float = 0.0):
+        super().__init__()
+        self.weight = weight
+        self.gamma = gamma
+        self.label_smoothing = label_smoothing
+
+    def forward(self, logits: torch.Tensor, targets: torch.Tensor) -> torch.Tensor:
+        ce = nn.functional.cross_entropy(logits, targets, weight=self.weight,
+                                         label_smoothing=self.label_smoothing,
+                                         reduction="none")
+        p_t = torch.exp(-ce)
+        return (((1 - p_t) ** self.gamma) * ce).mean()
+
+
+def build_criterion(o: dict, weights: torch.Tensor | None) -> nn.Module:
+    loss_name = o.get("loss", "cross_entropy")
+    label_smoothing = o.get("label_smoothing", 0.0)
+    if loss_name == "cross_entropy":
+        return nn.CrossEntropyLoss(weight=weights, label_smoothing=label_smoothing)
+    if loss_name == "focal":
+        return FocalLoss(weight=weights, gamma=o.get("focal_gamma", 2.0),
+                         label_smoothing=label_smoothing)
+    raise ValueError(f"optim.loss desconocido: {loss_name!r} (usar 'cross_entropy' o 'focal')")
+
+
 def set_seed(seed: int) -> None:
     random.seed(seed)
     np.random.seed(seed)
@@ -112,8 +146,8 @@ def main() -> None:
     if o.get("class_weights"):
         weights = ParaderoDataset(d["index"], "train", d["image_size"]).class_weights().to(device)
         print(f"class weights = {weights.tolist()}")
-    criterion = nn.CrossEntropyLoss(weight=weights,
-                                    label_smoothing=o.get("label_smoothing", 0.0))
+    criterion = build_criterion(o, weights)
+    print(f"loss = {o.get('loss', 'cross_entropy')}")
 
     optimizer = torch.optim.AdamW(
         param_groups(model, o["lr_backbone"], o["lr_head"]),
@@ -181,6 +215,7 @@ def main() -> None:
     (out_dir / "summary.json").write_text(json.dumps({
         "run_name": cfg["run_name"],
         "model": cfg["model"]["name"],
+        "loss": o.get("loss", "cross_entropy"),
         "best_val_macro_f1": best,
         "n_params_millions": round(n_params / 1e6, 1),
         "epochs_run": len(history),

@@ -116,7 +116,14 @@ def fetch_coco_annotations(out_dir: Path) -> Path:
 
 
 def filter_coco(ann_file: Path) -> list[dict]:
-    """Devuelve las imagenes con >=1 persona Y >=1 objeto de contexto vial."""
+    """Devuelve las imagenes con >=1 persona Y >=1 objeto de contexto vial.
+
+    COCO anota multitudes grandes con una sola caja `iscrowd=1` en vez de una
+    caja por persona — una imagen con 40 personas puede quedar con un conteo de
+    1 si se marco asi. Eso mete ruido justo cerca de los umbrales 3 y 10, asi
+    que las imagenes con alguna anotacion `iscrowd` se descartan directamente
+    en vez de contarlas mal (mismo criterio que CrowdHuman descarta `ignore`).
+    """
     print("leyendo anotaciones (tarda 1-2 min, el JSON pesa ~450 MB sin comprimir)")
     data = json.loads(ann_file.read_text())
     cat_name = {c["id"]: c["name"] for c in data["categories"]}
@@ -126,12 +133,20 @@ def filter_coco(ann_file: Path) -> list[dict]:
     for ann in data["annotations"]:
         name = cat_name[ann["category_id"]]
         if name == "person":
-            per_image.setdefault(ann["image_id"], {"persons": 0, "context": set()})["persons"] += 1
+            d = per_image.setdefault(ann["image_id"], {"persons": 0, "context": set(), "crowd": False})
+            if ann.get("iscrowd", 0):
+                d["crowd"] = True
+            else:
+                d["persons"] += 1
         elif name in CONTEXT_CATEGORIES:
-            per_image.setdefault(ann["image_id"], {"persons": 0, "context": set()})["context"].add(name)
+            per_image.setdefault(ann["image_id"], {"persons": 0, "context": set(), "crowd": False})["context"].add(name)
 
     selected = []
+    crowd_dropped = 0
     for img_id, d in per_image.items():
+        if d["crowd"]:
+            crowd_dropped += 1
+            continue
         if d["persons"] == 0 or not d["context"]:
             continue
         meta = img_meta[img_id]
@@ -145,6 +160,7 @@ def filter_coco(ann_file: Path) -> list[dict]:
         })
 
     print(f"\n{len(per_image)} imagenes con personas -> "
+          f"{crowd_dropped} descartadas por tener anotacion iscrowd (conteo no confiable) -> "
           f"{len(selected)} pasan el filtro de contexto vial")
     return selected
 
