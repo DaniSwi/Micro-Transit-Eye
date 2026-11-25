@@ -39,7 +39,10 @@ g7-micro-transit-eye/
 │   ├── dataset.py             ← Dataset + transforms (IDÉNTICOS para ambos modelos)
 │   ├── train.py               ← loop de entrenamiento (sirve para los dos)
 │   ├── evaluate.py            ← métricas, matriz de confusión, desglose por fuente
-│   └── baselines.py           ← baseline trivial (clase mayoritaria)
+│   ├── baselines.py           ← baseline trivial (clase mayoritaria)
+│   ├── baseline_yolo.py       ← baseline con visión: YOLOv8 + conteo, sin entrenar
+│   ├── interpret.py           ← Grad-CAM (ResNet) / attention rollout (ViT)
+│   └── demo.py                ← interfaz Gradio: sube una foto, compara los 3 enfoques
 ├── docs/
 │   ├── COLAB.md               ← celdas para copiar y pegar en Colab
 │   ├── CHECKLIST.md           ← lo que hay que tener listo, marcado uno por uno
@@ -93,6 +96,11 @@ python src/evaluate.py --run outputs/resnet50 --split test
 python src/evaluate.py --run outputs/vit_b16  --split test
 python src/evaluate.py --run outputs/resnet50 --split local
 python src/evaluate.py --run outputs/vit_b16  --split local
+
+# 7. Demo: interfaz web para probar con fotos nuevas (necesita los best.pt)
+pip install gradio ultralytics
+python src/demo.py                       # http://127.0.0.1:7860
+python src/demo.py --share               # link público (en Colab: sección 9 del notebook)
 ```
 
 ---
@@ -104,11 +112,12 @@ anotaciones que ya existen en cada dataset.
 
 | Fuente | Qué usamos | Cómo se vuelve etiqueta |
 |---|---|---|
-| COCO / Open Images | Imágenes con cajas `person` **y** además `bus`, `car`, `traffic light` o `stop sign` | Contar cajas `person` → bin |
-| CrowdHuman | Cajas visible-body | Contar cajas → bin (aporta clase `alta`) |
+| COCO 2017 | Imágenes con cajas `person` **y** algún objeto vial (`bus`, `car`, `truck`, `traffic light`, `stop sign`, `bicycle`), sin `iscrowd` | Contar cajas `person` → bin |
+| CrowdHuman | Cajas `person` sin marca `ignore` | Contar cajas → bin (aporta clase `alta`) |
 | ShanghaiTech Part B | Anotaciones de puntos, escenas de calle | Contar puntos → bin |
-| Roboflow Universe (bus detection) | Imágenes con micro/bus presente | Aporta contexto de paradero |
-| **`data/local_valpo/`** | **60–100 fotos nuestras del Gran Valparaíso** | **Etiquetadas a mano. SOLO TEST.** |
+| **`data/local_valpo/`** | **106 fotos nuestras del Gran Valparaíso** | **Etiquetadas a mano. SOLO TEST.** |
+
+Origen, licencias, número de imágenes por split y sesgos conocidos: **[`docs/DATA_CARD.md`](docs/DATA_CARD.md)**.
 
 **Criterio de etiquetado (texto literal para la lámina de datos):**
 
