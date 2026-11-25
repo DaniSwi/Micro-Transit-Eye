@@ -2,6 +2,7 @@ data/raw/
 data/index.csv
 data/local_valpo/*.jpg
 data/local_valpo/*.png
+data/local_valpo/*.jpeg
 outputs/
 .venv/
 __pycache__/
